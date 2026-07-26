@@ -1,0 +1,6 @@
+{
+  "name": "Healthcare Voice Agent Architecture Design",
+  "description": "Production-ready DevOps and System Architecture Specification for Healthcare Voice Agent Backend with Vapi, FastAPI, PostgreSQL, Docker, Nginx, Prometheus, Grafana, and CI/CD.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

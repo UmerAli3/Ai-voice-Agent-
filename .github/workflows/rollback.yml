@@ -1,0 +1,40 @@
+name: Manual / Emergency Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_image_tag:
+        description: "Docker Image Tag or Commit SHA to roll back to (e.g. sha-a1b2c3d or latest)"
+        required: true
+        default: "latest"
+
+jobs:
+  rollback:
+    name: Execute Production Rollback
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Remote Server Rollback via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.PROD_SERVER_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            echo "==> Executing Rollback to Target Tag: ${{ github.event.inputs.target_image_tag }}"
+            cd /opt/healthcare-voice-agent
+
+            echo "==> Pulling target version from registry..."
+            TAG=${{ github.event.inputs.target_image_tag }}
+            docker pull ghcr.io/${{ github.repository }}:$TAG || true
+
+            echo "==> Restarting container services..."
+            docker compose down
+            docker compose up -d
+
+            echo "==> Verifying post-rollback health status..."
+            curl --fail --retry 5 --retry-delay 3 http://localhost:8000/health
+            echo "==> Rollback complete and application is healthy!"

@@ -1,0 +1,30 @@
+{
+  "message": {
+    "type": "end-of-call-report",
+    "timestamp": 1785002400000,
+    "call": {
+      "id": "conv_vapi_889201a4_9002_health",
+      "orgId": "org_health_clinic_01",
+      "status": "ended",
+      "type": "inboundPhoneCall",
+      "customer": {
+        "number": "+15550198822",
+        "name": "Eleanor Vance"
+      },
+      "artifact": {
+        "transcript": "Agent: Thank you for calling Metro Healthcare Clinic. My name is Maya, your AI assistant. May I have your full name and date of birth?\nPatient: Hello Maya. My name is Eleanor Vance, and my date of birth is April 15, 1982.\nAgent: Thank you Eleanor. What is the primary reason for your call today?\nPatient: I need to confirm my appointment for tomorrow at 10 AM with Dr. Harrison and ask if I should fast before my blood test.\nAgent: I have confirmed your appointment with Dr. Harrison for tomorrow at 10 AM. Yes, please fast for 8 hours prior to your lab work.\nPatient: Perfect, thank you so much!",
+        "recordingUrl": "https://api.vapi.ai/recordings/call_vapi_889201a4.mp3"
+      },
+      "analysis": {
+        "summary": "Patient Eleanor Vance (DOB: 1982-04-15) called to confirm her appointment with Dr. Harrison scheduled for tomorrow at 10 AM. She inquired about lab fasting requirements. Agent confirmed appointment and instructed 8-hour fasting prior to blood work.",
+        "structuredData": {
+          "patient_name": "Eleanor Vance",
+          "dob": "1982-04-15",
+          "reason": "Appointment Confirmation & Lab Fasting Inquiry",
+          "appointment_date": "2026-07-27T10:00:00Z",
+          "physician": "Dr. Harrison"
+        }
+      }
+    }
+  }
+}

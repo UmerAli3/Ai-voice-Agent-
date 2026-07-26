@@ -1,0 +1,30 @@
+# Dependencies & Node
+node_modules/
+build/
+dist/
+coverage/
+
+# Python & Virtual Envs
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS & Logs
+.DS_Store
+*.log
+*.sqlite3
+
+# Environment & Secrets
+.env
+.env.local
+.env.*
+!.env.example

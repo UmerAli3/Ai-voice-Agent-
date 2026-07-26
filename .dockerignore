@@ -1,0 +1,30 @@
+# Git & Docker
+.git
+.gitignore
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Python & Virtual Envs
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.venv
+venv
+env
+*.egg-info
+.coverage
+htmlcov
+
+# Node & Frontend
+node_modules
+dist
+.bun
+bun.lock
+
+# Environment & Local Secrets
+.env
+.env.local
+*.log

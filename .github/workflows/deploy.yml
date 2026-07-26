@@ -1,0 +1,172 @@
+name: Production CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ===========================================================================
+  # 1. CI Stage: Linting & Automated Unit Tests
+  # ===========================================================================
+  test:
+    name: Linting & Unit Testing
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: voiceagent
+          POSTGRES_PASSWORD: ChooseAStrongPassword123!
+          POSTGRES_DB: voiceagentdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff pytest pytest-asyncio httpx
+
+      - name: Run Ruff Code Linter
+        run: |
+          ruff check src/
+
+      - name: Run Pytest Test Suite
+        env:
+          DATABASE_URL: postgresql://voiceagent:ChooseAStrongPassword123!@localhost:5432/voiceagentdb
+          POSTGRES_SERVER: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: voiceagent
+          POSTGRES_PASSWORD: ChooseAStrongPassword123!
+          POSTGRES_DB: voiceagentdb
+          SECRET_KEY: test_ci_secret_key_12345
+          VAPI_WEBHOOK_SECRET: whsec_prod_9874563210_health_voice
+        run: |
+          pytest -v
+
+  # ===========================================================================
+  # 2. Build Stage: Multi-Stage Docker Image Build & Push to GHCR
+  # ===========================================================================
+  build-and-push:
+    name: Build & Push Docker Image
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=long
+            type=ref,event=branch
+            type=raw,value=latest,enable=true
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ===========================================================================
+  # 3. CD Stage: SSH Server Deployment & Healthcheck Verification with Rollback
+  # ===========================================================================
+  deploy:
+    name: SSH Server Deployment & Verification
+    needs: build-and-push
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH to Production Instance
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.PROD_SERVER_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            echo "==> Navigating to application directory..."
+            cd /opt/healthcare-voice-agent
+
+            echo "==> Recording previous state for automated rollback safety..."
+            docker compose ps -q backend > .previous_container_id || true
+
+            echo "==> Pulling latest images from GHCR..."
+            docker compose pull
+
+            echo "==> Building and restarting services..."
+            docker compose up -d --build --remove-orphans
+
+            echo "==> Performing Post-Deployment Automated Healthcheck..."
+            HEALTHCHECK_SUCCESS=false
+            for i in {1..10}; do
+              HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || echo "000")
+              if [ "$HTTP_STATUS" -eq 200 ]; then
+                echo "--> Health check PASSED on attempt $i (HTTP 200 OK)"
+                HEALTHCHECK_SUCCESS=true
+                break
+              fi
+              echo "--> Attempt $i failed (HTTP $HTTP_STATUS). Retrying in 5s..."
+              sleep 5
+            done
+
+            if [ "$HEALTHCHECK_SUCCESS" = false ]; then
+              echo "==> CRITICAL: Post-deployment healthcheck failed!"
+              echo "==> Executing automated rollback to previous container configuration..."
+              docker compose rollback || docker compose down && docker compose up -d
+              exit 1
+            fi
+
+            echo "==> Deployment completed successfully!"
