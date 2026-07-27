@@ -73,12 +73,3 @@ The infrastructure includes an enterprise observability stack out-of-the-box:
 
 ---
 
-## Documentation Links
-
-- **Vapi Configuration Guide**: [docs/vapi_configuration.md](docs/vapi_configuration.md)
-- **Sample Webhook Payload**: [docs/sample_payload.json](docs/sample_payload.json)
-- **Webhook Testing Examples**: [docs/webhook_examples.md](docs/webhook_examples.md)
-- **SSL / TLS Integration Guide**: [docs/ssl_integration.md](docs/ssl_integration.md)
-- **DNS & Domain Setup Guide**: [docs/dns_domain_setup.md](docs/dns_domain_setup.md)
-- **CI/CD & Deployment Secrets Guide**: [docs/github_actions_secrets.md](docs/github_actions_secrets.md)
-- **Ubuntu Server Deployment Guide (68.233.98.166)**: [docs/deployment_guide_ubuntu.md](docs/deployment_guide_ubuntu.md)
