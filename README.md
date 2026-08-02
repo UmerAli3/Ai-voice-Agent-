@@ -44,13 +44,29 @@ healthcare-voice-agent/
    ```bash
    cp .env.example .env
    ```
+   Edit `.env` and set `SECRET_KEY`, `VAPI_WEBHOOK_SECRET`, and optionally `POSTGRES_PASSWORD`.
 
-2. Start full containerized stack using Docker Compose:
+2. Start the core stack (backend + database — **no Docker Nginx**, safe when host Nginx is installed):
    ```bash
-   docker compose up -d
+   docker compose up -d --build
    ```
 
-3. Access Application Services:
+   Optional monitoring stack:
+   ```bash
+   docker compose --profile monitoring up -d
+   ```
+
+   Full stack with **Docker Nginx** (only if host Nginx is not using port 80):
+   ```bash
+   docker compose --profile docker-nginx up -d
+   ```
+
+3. **Server with host Nginx**: copy `nginx/host-api.conf.example` to your Nginx sites config, proxy to `http://127.0.0.1:8000`, then:
+   ```bash
+   sudo nginx -t && sudo systemctl reload nginx
+   ```
+
+4. Access Application Services:
    - **FastAPI Documentation**: `http://localhost:8000/docs` or `http://api.internexus.tech/docs`
    - **Vapi Webhook Endpoint**: `POST http://localhost:8000/webhook/vapi`
    - **Prometheus UI**: `http://localhost:9090` or `http://prometheus.internexus.tech`

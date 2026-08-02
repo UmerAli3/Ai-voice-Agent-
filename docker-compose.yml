@@ -1,5 +1,9 @@
 version: "3.8"
 
+x-postgres-user: &postgres_user ${POSTGRES_USER:-voiceagent}
+x-postgres-password: &postgres_password ${POSTGRES_PASSWORD:-ChooseAStrongPassword123!}
+x-postgres-db: &postgres_db ${POSTGRES_DB:-voiceagentdb}
+
 services:
   # ---------------------------------------------------------------------------
   # 1. FastAPI Backend Service
@@ -12,12 +16,12 @@ services:
     env_file:
       - .env
     environment:
-      - POSTGRES_SERVER=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=voiceagent
-      - POSTGRES_PASSWORD=ChooseAStrongPassword123!
-      - POSTGRES_DB=voiceagentdb
-      - DATABASE_URL=postgresql://voiceagent:ChooseAStrongPassword123!@postgres:5432/voiceagentdb
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: *postgres_user
+      POSTGRES_PASSWORD: *postgres_password
+      POSTGRES_DB: *postgres_db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-voiceagent}:${POSTGRES_PASSWORD:-ChooseAStrongPassword123!}@postgres:5432/${POSTGRES_DB:-voiceagentdb}
     ports:
       - "8000:8000"
     depends_on:
@@ -40,15 +44,15 @@ services:
     image: postgres:16-alpine
     container_name: healthcare_voice_postgres
     environment:
-      POSTGRES_USER: voiceagent
-      POSTGRES_PASSWORD: ChooseAStrongPassword123!
-      POSTGRES_DB: voiceagentdb
+      POSTGRES_USER: *postgres_user
+      POSTGRES_PASSWORD: *postgres_password
+      POSTGRES_DB: *postgres_db
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U voiceagent -d voiceagentdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-voiceagent} -d ${POSTGRES_DB:-voiceagentdb}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -58,11 +62,14 @@ services:
       - app-network
 
   # ---------------------------------------------------------------------------
-  # 3. Nginx Reverse Proxy Service
+  # 3. Nginx Reverse Proxy Service (optional — use profile docker-nginx)
+  # Skip when host Nginx is already installed on the server (default setup).
   # ---------------------------------------------------------------------------
   nginx:
     image: nginx:alpine
     container_name: healthcare_voice_nginx
+    profiles:
+      - docker-nginx
     ports:
       - "80:80"
       - "443:443"
@@ -89,6 +96,8 @@ services:
   prometheus:
     image: prom/prometheus:v2.51.0
     container_name: healthcare_voice_prometheus
+    profiles:
+      - monitoring
     ports:
       - "9090:9090"
     volumes:
@@ -114,6 +123,8 @@ services:
   grafana:
     image: grafana/grafana:10.4.0
     container_name: healthcare_voice_grafana
+    profiles:
+      - monitoring
     ports:
       - "3001:3000"
     environment:
@@ -141,6 +152,8 @@ services:
   node-exporter:
     image: prom/node-exporter:v1.7.0
     container_name: healthcare_voice_node_exporter
+    profiles:
+      - monitoring
     ports:
       - "9100:9100"
     volumes:
@@ -161,6 +174,8 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: healthcare_voice_cadvisor
+    profiles:
+      - monitoring
     ports:
       - "8080:8080"
     volumes:

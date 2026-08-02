@@ -7,7 +7,7 @@ This document contains practical HTTP request examples, script snippets, and cUR
 ## 1. cURL Command Example
 
 ```bash
-curl -X POST "http://localhost:3000/webhook/vapi" \
+curl -X POST "http://localhost:8000/webhook/vapi" \
   -H "Content-Type: application/json" \
   -H "x-vapi-secret: whsec_prod_9874563210_health_voice" \
   -d '{
@@ -44,7 +44,7 @@ curl -X POST "http://localhost:3000/webhook/vapi" \
 import json
 import requests
 
-WEBHOOK_URL = "http://localhost:3000/webhook/vapi"
+WEBHOOK_URL = "http://localhost:8000/webhook/vapi"
 SECRET_HEADER = "whsec_prod_9874563210_health_voice"
 
 payload = {
@@ -87,7 +87,7 @@ print(f"Response Body: {json.dumps(response.json(), indent=2)}")
 ## 3. Node.js JavaScript (`fetch`) Example
 
 ```javascript
-const WEBHOOK_URL = 'http://localhost:3000/webhook/vapi';
+const WEBHOOK_URL = 'http://localhost:8000/webhook/vapi';
 const VAPI_SECRET = 'whsec_prod_9874563210_health_voice';
 
 const samplePayload = {
